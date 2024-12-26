@@ -110,14 +110,6 @@ fn main() {
         _ => unreachable!()
     };
 
-    use rayon::prelude::*;
-    use std::thread;
-
-    (1..10).into_par_iter().for_each(|i| {
-        println!("Processing {} on thread {:?}", i, thread::current().id());
-    });
-
-
     for day in first_day..=last_day {
         if let Some(a) = solutions.get_mut(&day) {
             run(a, n_iterations, test_mode, bruteforce);
