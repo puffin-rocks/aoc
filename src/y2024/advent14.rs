@@ -175,7 +175,7 @@ impl Solve for Advent {
         let mut sec_elapsed: usize = 0;
         let mut robots = self.robots.clone();
         let prefix = format!("output/{}/", self.label.year);
-        fs::create_dir_all(prefix.clone());
+        let _ = fs::create_dir_all(prefix.clone());
         while sec_elapsed < n_seconds {
             robots = robots.iter().map(|r| {
                 let mut p = r.get_point(1);
