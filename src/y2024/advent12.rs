@@ -198,12 +198,15 @@ impl Solve for Advent {
         //-for each bucket arrange edges in map of which points can be reached from this edge
         //- should be three cases: (1) corners, with product of points 0, count as 1, (2) lines with non zero product of points, count as 0 (3) crosses with four points, count as 2
         self.check_input(Some(2))?;
-        let (_, bucket_map) = self.compute_buckets_and_walls();
+        let (wall_map, bucket_map) = self.compute_buckets_and_walls();
         // Merging result calculation
-        let mut result = 0;
-        for (_, bucket_vec) in bucket_map.iter() {
-
-            for v in bucket_vec {
+        let mut result_old = 0;
+        let mut tmp_prices: HashMap<&AChar, Vec<usize>> = HashMap::new();
+        for (key, bucket_vec) in bucket_map.iter(){
+            tmp_prices.insert(*key, vec![0; bucket_vec.len()]);
+        }
+        for (pch, bucket_vec) in bucket_map.iter() {
+            for (i,v) in bucket_vec.iter().enumerate() {
                 let object: BTreeSet<Point2D> = v.iter().map(|&p| *p.clone()).collect();
 
                 let mut pset: HashSet<usize> = HashSet::new();
@@ -217,18 +220,52 @@ impl Solve for Advent {
                 let p = *pset.iter().max().unwrap();
 
                 if let (Some(pt), Some(ch)) = self.check_enclosed(&object) {
-                    let bucket_vec_out = bucket_map.get(&Arc::new(ch)).unwrap();
-                    for vo in bucket_vec_out{
+                    //if object itself is enclosed, its price adds to the price of enclosing objects
+                    let ch = Arc::new(ch);
+                    let bucket_vec_out = bucket_map.get(&ch).unwrap();
+                    for (j, vo) in bucket_vec_out.iter().enumerate(){
                         if vo.contains(&Arc::new(pt)){
-                            result += vo.len()*p;
+                            result_old += vo.len()*p;
+                            *tmp_prices.get_mut(&ch).unwrap().get_mut(j).unwrap()+=p;
                             break
                         }
                     }
                 }
-                result += v.len()*p;
+                *tmp_prices.get_mut(pch).unwrap().get_mut(i).unwrap()+=p;
+                result_old += v.len()*p;
             }
         }
-        assert_display(result, Some(1206), 898684, "Total price of fencing", test_mode)
+        let mut result:usize = 0;
+        for (pch, bucket_vec) in bucket_map.iter() {
+            for (i, v) in bucket_vec.iter().enumerate() {
+                let aobject: BTreeSet<&APoint> = v.iter().cloned().collect();
+                let mut eobject: HashSet<Edge> = HashSet::new();
+                for p in aobject.iter(){
+                    eobject.extend(wall_map.get(p).unwrap());
+                }
+                let mut edge_map: HashMap<Point2D, HashSet<Point2D>> = HashMap::new();
+                for e in eobject.iter(){
+                    edge_map.entry((*e).0).or_insert_with(HashSet::new).insert((*e).1.clone());
+                    edge_map.entry((*e).1).or_insert_with(HashSet::new).insert((*e).0.clone());
+                }
+                let mut price:usize = 0;
+                for (k,v) in edge_map.iter(){
+                    if v.len()>2 {
+                        price+=2;
+                    }
+                    else{
+                        let pts = v.iter().cloned().collect::<Vec<Point2D>>();
+                        let (p1, p2) = (pts.get(0).unwrap(), pts.get(1).unwrap());
+                        let angle = (p1.x()-k.x())*(p2.x()-k.x())+(p1.y()-k.y())*(p2.y()-k.y());
+                        if angle==0{
+                            price+=1;
+                        }
+                    }
+                }
+                result+=price*v.len();
+            }
+        }
+        assert_display(result_old, Some(1206), 898684, "Total price of fencing", test_mode)
     }
 }
 
