@@ -21,6 +21,7 @@ impl Default for Advent {
 }
 type APoint = Arc<Point2D>;
 type AChar = Arc<char>;
+type Edge = (Point2D, Point2D);
 
 impl Advent{
     fn check_enclosed(&self, set: &BTreeSet<Point2D>)-> (Option<Point2D>, Option<char>){
@@ -54,12 +55,12 @@ impl Advent{
         (result, check_letter)
     }
 
-    fn compute_buckets_and_walls(&self) -> (HashMap<&APoint, usize>, HashMap<&AChar, Vec<HashSet<&APoint>>>) {
-        let (vec_walls, vec_bucket_map): (Vec<HashMap<&APoint, usize>>, Vec<HashMap<&AChar, Vec<HashSet<&APoint>>>>) =
+    fn compute_buckets_and_walls(&self) -> (HashMap<&APoint, HashSet<Edge>>, HashMap<&AChar, Vec<HashSet<&APoint>>>) {
+        let (vec_walls, vec_bucket_map): (Vec<HashMap<&APoint, HashSet<Edge>>>, Vec<HashMap<&AChar, Vec<HashSet<&APoint>>>>) =
             self.canvas.elements().par_iter()
                 .map(|(k, v)| {
                     let mut bucket_map: HashMap<&AChar, Vec<HashSet<&APoint>>> = HashMap::new();
-                    let mut walls: HashMap<&APoint, usize> = HashMap::new();
+                    let mut walls: HashMap<&APoint, HashSet<Edge>> = HashMap::new();
                     let mut stack: BTreeSet<&APoint> = v.iter().collect();
                     let mut search_from: usize = 0;
 
@@ -67,7 +68,7 @@ impl Advent{
                         let n = stack.len();
                         let mut new_stack: BTreeSet<&APoint> = BTreeSet::new();
                         for &p in stack.iter() {
-                            let mut n_walls = 0;
+                            let mut edges: HashSet<Edge> = HashSet::new();
                             let mut in_bucket = false;
                             if !bucket_map.contains_key(k) {
                                 // start new bucket
@@ -79,6 +80,21 @@ impl Advent{
                             // count walls
                             for d in Direction::base() {
                                 let n_point = &**p + &d;
+                                let edge = match d{
+                                    Direction::Down => {
+                                        (*p.clone(), &**p + &Direction::Right)
+                                    },
+                                    Direction::Up => {
+                                        (&**p + &Direction::Up, &**p + &Direction::UpRight)
+                                    },
+                                    Direction::Left => {
+                                        (*p.clone(), &**p + &Direction::Up)
+                                    },
+                                    Direction::Right =>{
+                                        (&**p + &Direction::Right, &**p + &Direction::UpRight)
+                                    },
+                                    _ => unreachable!()
+                                };
                                 let neighbour = self.canvas.get_element(&n_point);
                                 match neighbour {
                                     Some(&letter) => {
@@ -96,13 +112,13 @@ impl Advent{
                                                 }
                                             }
                                         } else {
-                                            n_walls += 1;
+                                            edges.insert(edge);
                                         }
                                     },
-                                    None => n_walls += 1,
+                                    None => {edges.insert(edge);},
                                 };
                             }
-                            walls.insert(p, n_walls);
+                            walls.insert(p, edges);
 
                             if !in_bucket {
                                 // start new bucket
@@ -130,7 +146,7 @@ impl Advent{
                 .unzip();  // This will give us two separate Vecs: one for walls, one for bucket_map
 
         // Merging the results
-        let walls: HashMap<&APoint, usize> = vec_walls.into_iter().fold(HashMap::new(), |mut acc, map| {
+        let walls: HashMap<&APoint, HashSet<Edge>> = vec_walls.into_iter().fold(HashMap::new(), |mut acc, map| {
             acc.extend(map);
             acc
         });
@@ -167,8 +183,8 @@ impl Solve for Advent {
             for v in bucket_vec {
                 let mut per = 0;
                 for &p in v.iter() {
-                    if let Some(&n_walls) = walls.get(&p) {
-                        per += n_walls;
+                    if let Some(edges) = walls.get(&p) {
+                        per += edges.len();
                     }
                 }
                 result += v.len() * per;
@@ -339,8 +355,6 @@ fn get_next_side(picture: &Vec<bool>, curr_direction: Option<Direction>) -> Dire
         Some(d) => {
             let d_mirror = d.mirror();
             if !dirs.contains(&d_mirror){
-                // println!("{:?}", dirs);
-                // println!("{:?}", d);
                 panic!("{}", "Cannot have possible directions not including previous direction")
             }
             dirs.remove(&d_mirror);
