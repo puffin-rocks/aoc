@@ -29,7 +29,7 @@ impl Solve for Advent {
         Ok(())
     }
 
-    fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
+    fn compute_part1_answer(&self, _: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
         let m: usize = self.directions.chars().filter(|ch| ch==&'(').collect::<Vec<_>>().len();
         let floor = m-(self.directions.len()-m);
