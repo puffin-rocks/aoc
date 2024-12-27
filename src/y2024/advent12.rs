@@ -1,5 +1,4 @@
 use std::collections::{BTreeSet, HashMap, HashSet};
-use std::ops::{Add};
 use std::sync::Arc;
 use rayon::prelude::*;
 use crate::geometry::{CanvasAsync, Direction, Point2D};
@@ -24,37 +23,6 @@ type AChar = Arc<char>;
 type Edge = (Point2D, Point2D);
 
 impl Advent{
-    fn check_enclosed(&self, set: &BTreeSet<Point2D>)-> (Option<Point2D>, Option<char>){
-        let mut check_letter: Option<char> = None;
-        let mut result: Option<Point2D> = None;
-        for p in set{
-            for d in [&Direction::base()[..], &Direction::diagonal()[..]].concat() {
-                let n_point = p + &d;
-                if set.contains(&n_point){
-                    continue;
-                }
-                let neighbour = self.canvas.get_element(&n_point);
-                match neighbour {
-                    Some(&letter) => {
-                        match check_letter{
-                            Some(ch_letter)=>{
-                                if ch_letter!=letter{
-                                    return (None, None);
-                                }
-                            },
-                            None =>{
-                                check_letter = Some(letter);
-                                result = Some(n_point);
-                            }
-                        }
-                    }
-                    None => {return (None, None);}
-                }
-            }
-        }
-        (result, check_letter)
-    }
-
     fn compute_buckets_and_walls(&self) -> (HashMap<&APoint, HashSet<Edge>>, HashMap<&AChar, Vec<HashSet<&APoint>>>) {
         let (vec_walls, vec_bucket_map): (Vec<HashMap<&APoint, HashSet<Edge>>>, Vec<HashMap<&AChar, Vec<HashSet<&APoint>>>>) =
             self.canvas.elements().par_iter()
@@ -193,228 +161,44 @@ impl Solve for Advent {
         assert_display(result, Some(1930), 1486324, "Total price of fencing", test_mode)
     }
     fn compute_part2_answer(&self, test_mode: bool) -> Result<String, String>{
-        //another idea to try is
-        //-instead of collecting flags of walls, collect their edges
-        //-for each bucket arrange edges in map of which points can be reached from this edge
-        //- should be three cases: (1) corners, with product of points 0, count as 1, (2) lines with non zero product of points, count as 0 (3) crosses with four points, count as 2
         self.check_input(Some(2))?;
         let (wall_map, bucket_map) = self.compute_buckets_and_walls();
-        // Merging result calculation
-        let mut result_old = 0;
-        let mut tmp_prices: HashMap<&AChar, Vec<usize>> = HashMap::new();
-        for (key, bucket_vec) in bucket_map.iter(){
-            tmp_prices.insert(*key, vec![0; bucket_vec.len()]);
-        }
-        for (pch, bucket_vec) in bucket_map.iter() {
-            for (i,v) in bucket_vec.iter().enumerate() {
-                let object: BTreeSet<Point2D> = v.iter().map(|&p| *p.clone()).collect();
 
-                let mut pset: HashSet<usize> = HashSet::new();
-                for po in &object {
-                    let pr = get_price(&object, po, false);
-                    if pr>0 {
-                        pset.insert(pr);
-                    }
-                }
+        let mut result = 0;
 
-                let p = *pset.iter().max().unwrap();
+        for bucket_vec in bucket_map.values() {
+            for v in bucket_vec {
+                let eobject: HashSet<_> = v.iter()
+                    .flat_map(|p| wall_map.get(p).unwrap())
+                    .cloned().collect();
 
-                if let (Some(pt), Some(ch)) = self.check_enclosed(&object) {
-                    //if object itself is enclosed, its price adds to the price of enclosing objects
-                    let ch = Arc::new(ch);
-                    let bucket_vec_out = bucket_map.get(&ch).unwrap();
-                    for (j, vo) in bucket_vec_out.iter().enumerate(){
-                        if vo.contains(&Arc::new(pt)){
-                            result_old += vo.len()*p;
-                            *tmp_prices.get_mut(&ch).unwrap().get_mut(j).unwrap()+=p;
-                            break
-                        }
-                    }
-                }
-                *tmp_prices.get_mut(pch).unwrap().get_mut(i).unwrap()+=p;
-                result_old += v.len()*p;
-            }
-        }
-        let mut result:usize = 0;
-        for (pch, bucket_vec) in bucket_map.iter() {
-            for (i, v) in bucket_vec.iter().enumerate() {
-                let aobject: BTreeSet<&APoint> = v.iter().cloned().collect();
-                let mut eobject: HashSet<Edge> = HashSet::new();
-                for p in aobject.iter(){
-                    eobject.extend(wall_map.get(p).unwrap());
-                }
                 let mut edge_map: HashMap<Point2D, HashSet<Point2D>> = HashMap::new();
-                for e in eobject.iter(){
-                    edge_map.entry((*e).0).or_insert_with(HashSet::new).insert((*e).1.clone());
-                    edge_map.entry((*e).1).or_insert_with(HashSet::new).insert((*e).0.clone());
+                for e in eobject {
+                    edge_map.entry(e.0).or_default().insert(e.1);
+                    edge_map.entry(e.1).or_default().insert(e.0);
                 }
-                let mut price:usize = 0;
-                for (k,v) in edge_map.iter(){
-                    if v.len()>2 {
-                        price+=2;
-                    }
-                    else{
-                        let pts = v.iter().cloned().collect::<Vec<Point2D>>();
-                        let (p1, p2) = (pts.get(0).unwrap(), pts.get(1).unwrap());
-                        let angle = (p1.x()-k.x())*(p2.x()-k.x())+(p1.y()-k.y())*(p2.y()-k.y());
-                        if angle==0{
-                            price+=1;
+
+                let price: usize = edge_map
+                    .iter()
+                    .map(|(k, v)| {
+                        if v.len() > 2 {
+                            2
+                        } else {
+                            let pts: Vec<_> = v.iter().collect();
+                            let (d1, d2) = ((pts[0] - k).to_point(), (pts[1] - k).to_point());
+                            if d1.x() * d2.x() + d1.y() * d2.y() == 0 {
+                                1
+                            } else {
+                                0
+                            }
                         }
-                    }
-                }
-                result+=price*v.len();
+                    })
+                    .sum();
+
+                result += price * v.len();
             }
         }
-        assert_display(result_old, Some(1206), 898684, "Total price of fencing", test_mode)
-    }
-}
 
-fn get_price(bucket: &BTreeSet<Point2D>, starting_point: &Point2D, verbose: bool) -> usize{
-    let mut current_point = get_upper_right_corner(starting_point);
-    let stop = current_point.clone();
-    let mut current_direction: Option<Direction> = None;
-    let mut stop_dir = None;
-    let mut cnt = 0;
-    loop {
-        if verbose {
-            println!("Corner {:?}", current_point);
-        }
-        let p = get_neighbour_picture(&bucket, &current_point);
-        if verbose {
-            println!("{:?}", p);
-        }
-        let cd = get_next_side(&p, current_direction);
-
-        if verbose {
-            println!("{:?}", cd);
-        }
-        current_point = &current_point + &cd;
-        if current_point == stop{
-            if verbose {
-                println!("{:?}", (cd, current_direction, stop_dir));
-            }
-            if let Some(pd) = current_direction{
-                if cd !=pd {
-                    cnt+=1;
-                }
-                if Some(cd)==stop_dir{
-                    cnt-=1;
-                }
-            }
-            break;
-        }else{
-            if let Some(pd) = current_direction{
-                if cd !=pd{
-                    cnt+=1;
-                }
-            }
-            else{
-                cnt+=1;
-                stop_dir = Some(cd);
-            }
-        }
-        //
-        if verbose {
-            println!("{}", cnt);
-        }
-        current_direction = Some(cd);
-    }
-    cnt
-}
-
-type GridPoint = (f32, f32);
-
-impl Add<&Direction> for &GridPoint {
-    type Output = GridPoint;
-
-    fn add(self, other: &Direction) -> GridPoint {
-        let p = other.to_point();
-        (
-            self.0 + (*p.x() as f32),
-            self.1 + (*p.y() as f32)
-        )
-    }
-}
-
-fn get_upper_right_corner(p: &Point2D) ->  GridPoint{
-    (*p.x() as f32 + 0.5, *p.y() as f32 + 0.5)
-}
-
-fn get_neighbour_picture(object: &BTreeSet<Point2D>, p: &GridPoint) -> Vec<bool>{
-    [Direction::DownRight, Direction::UpRight, Direction::UpLeft, Direction::DownLeft].iter()
-        .map(|d|{
-            let z = d.to_point();
-            let np: Point2D = Point2D::new((p.0 + *z.x() as f32*0.5) as isize, (p.1 + *z.y() as f32*0.5) as isize);
-            object.contains(&np)
-        }).collect()
-}
-
-fn get_possible_directions(picture: &Vec<bool>) -> HashSet<Direction>{
-    let n_points = picture.iter().filter(|&&x| x).count();
-    if n_points == 0{
-        panic!("{}", format!("Cannot have number of points {} in picture", n_points))
-    }
-    if n_points == 4{
-        return HashSet::new();
-    }
-    let v = if n_points == 2{
-        let picture_copy: Vec<bool> = if picture[0] == false {
-            picture.iter().map(|x| !x ).collect()
-        }else{
-            (*picture.clone()).to_owned()
-        };
-        match &picture_copy[..] {
-            [true, false, false, true] => [Direction::Right, Direction::Left].to_vec(),
-            [true, true, false, false] => [Direction::Up, Direction::Down].to_vec(),
-            [true, false, true, false] => Direction::base().to_vec(),
-            _ => {Vec::new()}
-        }
-    }else{
-        let picture_copy = if n_points == 1{
-            picture.iter().map(|x| !x ).collect()
-        }else{
-            (*picture.clone()).to_owned()
-        };
-        match &picture_copy[..] {
-            [true, true, true, false] => [Direction::Down, Direction::Left].to_vec(),
-            [false, true, true, true] => [Direction::Down, Direction::Right].to_vec(),
-            [true, false, true, true] => [Direction::Up, Direction::Right].to_vec(),
-            [true, true, false, true] => [Direction::Up, Direction::Left].to_vec(),
-            _ => {Vec::new()}
-        }
-    };
-    v.iter().map(|d| *d).collect()
-}
-
-fn get_next_side(picture: &Vec<bool>, curr_direction: Option<Direction>) -> Direction{
-    let mut dirs = get_possible_directions(picture);
-    match curr_direction{
-        Some(d) => {
-            let d_mirror = d.mirror();
-            if !dirs.contains(&d_mirror){
-                panic!("{}", "Cannot have possible directions not including previous direction")
-            }
-            dirs.remove(&d_mirror);
-            if dirs.len() == 1{
-                *dirs.iter().next().unwrap()
-            }
-            else{
-                match d{
-                    Direction::Up =>Direction::Left,
-                    Direction::Right =>Direction::Up,
-                    Direction::Down =>Direction::Right,
-                    Direction::Left =>Direction::Down,
-                    _ => Direction::None
-                }
-            }
-        },
-        None =>{
-            for d in Direction::base() {
-                if dirs.contains(&d) {
-                    return d;
-                }
-            }
-            Direction::None
-        }
+        assert_display(result, Some(1206), 898684, "Total price of fencing", test_mode)
     }
 }
