@@ -1,4 +1,5 @@
 /target
 /.idea
 /input/2024/*_test.txt
+/src/y2015/advent00.rs
 /output
