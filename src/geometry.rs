@@ -56,6 +56,16 @@ impl Direction {
         }
     }
 
+    pub(crate) fn from_char(ch: &char) -> Self{
+        match ch {
+            'v' => Direction::Up,
+            '>' => Direction::Right,
+            '^' => Direction::Down,
+            '<' => Direction::Left,
+            _ => unreachable!()
+        }
+    }
+
     pub(crate) fn to_tuple(&self) -> (isize, isize) {
         match self {
             Direction::Up => (0, 1),
