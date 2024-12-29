@@ -1,28 +1,21 @@
-use std::collections::{HashMap, HashSet};
-use itertools::izip;
 use crate::geometry::Point2D;
 use crate::utils::{assert_display, Label, Solve};
 
-#[derive(Debug, Clone, Hash, PartialEq)]
 enum Action{
     TurnOn,
     TurnOff,
     Toggle
 }
 
-impl Eq for Action{}
-
 pub(crate) struct Advent {
     label: Label,
     instructions: Vec<(Action, Point2D, Point2D)>,
-    lines: Vec<String>
 }
 impl Default for Advent {
     fn default() -> Self{
         Self{
             label: Label::new(6, 2015),
-            instructions: Vec::new(),
-            lines: Vec::new()
+            instructions: Vec::new()
         }
     }
 }
@@ -49,7 +42,6 @@ impl Solve for Advent {
                 }
             }
         }
-        self.lines.push(line);
         Ok(())
     }
 
@@ -85,9 +77,31 @@ impl Solve for Advent {
                 {x.iter().map(|y| {if *y==true {1} else{0}}).sum::<usize>()}).sum::<usize>();
         assert_display(result, None, 569999, "Number of lights on", false)
     }
-    //
-    // fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
-    //     self.check_input(Some(2))?;
-    //     Err(String::from("Part 2 not implemented yet"))
-    // }
+
+    fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
+        let mut lights = [[0usize; 1000]; 1000];
+        for (action, from, to) in self.instructions.iter() {
+            for x in *from.x() as usize..=*to.x() as usize{
+                for y in *from.y() as usize..=*to.y() as usize{
+                    match action {
+                        Action::TurnOn => {
+                            lights[x][y]+=1;
+                        },
+                        Action::TurnOff => {
+                            lights[x][y] = lights[x][y].saturating_sub(1);
+                        },
+                        Action::Toggle => {
+                            lights[x][y]+=2;
+                        }
+                    };
+                }
+            }
+
+        }
+        let result = lights.iter()
+            .map(|x|
+                {x.iter().sum::<usize>()}).sum::<usize>();
+        assert_display(result, None, 17836115, "Total brightness", false)
+    }
 }
