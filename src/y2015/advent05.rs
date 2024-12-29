@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use crate::hashset;
 use crate::utils::{assert_display, Label, Solve};
 
@@ -70,11 +71,31 @@ impl Solve for Advent {
                 }
             }
         }
-        assert_display(cnt, None, 238, "Number of nice strings", false);
+        assert_display(cnt, None, 238, "Number of nice strings", false)
     }
-    //
-    // fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
-    //     self.check_input(Some(2))?;
-    //     Err(String::from("Part 2 not implemented yet"))
-    // }
+
+    fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
+        let mut cnt = 0;
+        for line in self.lines.iter(){
+            let mut three_letter_flag = false;
+            let mut two_letter_flag = false;
+            for p in line.chars().collect::<Vec<_>>().windows(3){
+                three_letter_flag = p[0]==p[2];
+                if three_letter_flag{
+                    break;
+                }
+            }
+            if three_letter_flag{
+                for p in line.chars().collect::<Vec<_>>().windows(2){
+                    two_letter_flag = line.matches(&p.iter().collect::<String>()).count()>1;
+                    if two_letter_flag{
+                        cnt+=1;
+                        break;
+                    }
+                }
+            }
+        }
+        assert_display(cnt, None, 69, "Number of nice strings", false)
+    }
 }
