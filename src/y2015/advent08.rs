@@ -34,34 +34,29 @@ impl Solve for Advent {
     fn compute_part1_answer(&self, _: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
         let mut result = 0;
-        for line in self.lines.iter(){
-            result +=2;
-            let mut i = 0;
-            while i<line.len(){
-                let ch = line.chars().nth(i).unwrap();
-                if ch=='\\'{
-                    if let Some(ch) = line.chars().nth(i+1){
-                        match ch{
-                            '\\' | '\"' =>{
-                                result +=1;
-                                i+=1;
+        for line in &self.lines {
+            result += 2; // For the surrounding quotes
+            let mut chars = line.chars();
+            while let Some(ch) = chars.next() {
+                if ch == '\\' {
+                    if let Some(next) = chars.next() {
+                        match next {
+                            '\\' | '"' => {
+                                result += 1;
                             }
-                            'x' =>{
-                                if let (Some(ch1), Some(ch2)) = (line.chars().nth(i+2),line.chars().nth(i+3)){
-                                    let mut s = String::new();
-                                    s.push(ch1);
-                                    s.push(ch2);
-                                    if u8::from_str_radix(s.as_str(), 16).is_ok(){
-                                        result +=3;
-                                        i+=3;
-                                    }
+                            'x' => {
+                                if chars.next().is_some_and(|c1| {
+                                    chars.next().is_some_and(|c2| {
+                                        u8::from_str_radix(&format!("{c1}{c2}"), 16).is_ok()
+                                    })
+                                }) {
+                                    result += 3;
                                 }
                             }
-                            _ =>{}
+                            _ => {}
                         }
                     }
                 }
-                i+=1;
             }
         }
         assert_display(result, None, 1371, "String overhead", false)
