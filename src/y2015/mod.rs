@@ -8,6 +8,7 @@ mod advent04;
 mod advent05;
 mod advent06;
 mod advent07;
+mod advent08;
 
 pub(crate) fn collect_solutions() -> HashMap<u8, Box<dyn Solve>>{
     let mut advents: HashMap<u8, Box<dyn Solve>> = HashMap::new();
@@ -18,7 +19,7 @@ pub(crate) fn collect_solutions() -> HashMap<u8, Box<dyn Solve>>{
     add_default_to_collection::<advent05::Advent>(&mut advents);
     add_default_to_collection::<advent06::Advent>(&mut advents);
     add_default_to_collection::<advent07::Advent>(&mut advents);
-    // add_default_to_collection::<advent08::Advent>(&mut advents);
+    add_default_to_collection::<advent08::Advent>(&mut advents);
     // add_default_to_collection::<advent09::Advent>(&mut advents);
     // add_default_to_collection::<advent10::Advent>(&mut advents);
     // add_default_to_collection::<advent11::Advent>(&mut advents);
