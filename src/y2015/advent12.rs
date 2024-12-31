@@ -1,12 +1,15 @@
 use crate::utils::{assert_display, Label, Solve};
+use serde_json::Value;
 
 pub(crate) struct Advent {
-    label: Label
+    label: Label,
+    json: String,
 }
 impl Default for Advent {
     fn default() -> Self{
         Self{
-            label: Label::new(12, 2015)
+            label: Label::new(12, 2015),
+            json: String::new()
         }
     }
 }
@@ -16,23 +19,68 @@ impl Solve for Advent {
     fn get_label(&self) -> &Label{ &self.label }
     fn get_label_mut(&mut self) -> &mut Label {&mut self.label}
 
-    fn add_record_from_line(&mut self, _line: String) -> Result<(), std::num::ParseIntError>{
-        "invalid".parse::<i32>()?;
+    fn add_record_from_line(&mut self, line: String) -> Result<(), std::num::ParseIntError>{
+        self.json = line;
         Ok(())
     }
 
     fn info(&self) -> Result<(), String>{
         self.check_input(None)?;
+        println!("JSON length: {}", self.json.len());
         Ok(())
     }
 
-    // fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
-    //     self.check_input(Some(1))?;
-    //     Err(String::from("Part 1 not implemented yet"))
-    // }
-    //
-    // fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
-    //     self.check_input(Some(2))?;
-    //     Err(String::from("Part 2 not implemented yet"))
-    // }
+    fn compute_part1_answer(&self, _: bool) -> Result<String, String>{
+        self.check_input(Some(1))?;
+        let parts = self.json.split(&[':', ',','[',']','{','}'][..]).collect::<Vec<_>>();
+        let mut sum = 0;
+        for p in parts{
+            match p.parse::<isize>(){
+                Ok(num) => sum+=num,
+                Err(_) => {}
+            }
+        }
+        assert_display(sum, None, 119433, "Sum of numbers", false)
+    }
+
+    fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
+        let parsed: Value = serde_json::from_str(self.json.as_str()).expect("Invalid JSON");
+        if parsed.is_object(){
+            if let Some(tmp) = parsed.as_object(){
+                println!("{:?}", tmp.keys().collect::<Vec<_>>());
+            }
+        }
+        Err(String::from("Part 2 not implemented yet"))
+    }
+}
+
+fn traverse(parsed: &Value, sum: &mut isize){
+    if parsed.is_object(){
+        if let Some(tmp) = parsed.as_object(){
+            let mut do_traverse = true;
+            for v in tmp.values(){
+                if v.is_string(){
+                    if let Some(s) = v.as_str(){
+                        if v=="red"{
+                            do_traverse = false;
+                            break;
+                        }
+                    }
+                }
+            }
+            if do_traverse {
+                for v in tmp.values() {
+                    traverse(v,sum);
+                }
+            }
+        }
+    }
+    else if parsed.is_array(){
+        if let Some(tmp) = parsed.as_array(){
+            for v in tmp.iter(){
+                traverse(v, sum);
+            }
+        }
+    }
 }
