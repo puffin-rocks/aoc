@@ -126,6 +126,6 @@ impl Solve for Advent {
     }
 
     fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
-        self.solve(true, 618, 2)
+        self.solve(true, 601, 2)
     }
 }
