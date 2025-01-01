@@ -46,41 +46,31 @@ impl Solve for Advent {
     fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
         let parsed: Value = serde_json::from_str(self.json.as_str()).expect("Invalid JSON");
-        if parsed.is_object(){
-            if let Some(tmp) = parsed.as_object(){
-                println!("{:?}", tmp.keys().collect::<Vec<_>>());
-            }
-        }
-        Err(String::from("Part 2 not implemented yet"))
+        let mut sum = 0;
+        traverse(&parsed, &mut sum);
+        assert_display(sum, None, 68466, "Sum of numbers", false)
     }
 }
 
-fn traverse(parsed: &Value, sum: &mut isize){
-    if parsed.is_object(){
-        if let Some(tmp) = parsed.as_object(){
-            let mut do_traverse = true;
-            for v in tmp.values(){
-                if v.is_string(){
-                    if let Some(s) = v.as_str(){
-                        if v=="red"{
-                            do_traverse = false;
-                            break;
-                        }
-                    }
-                }
-            }
-            if do_traverse {
-                for v in tmp.values() {
-                    traverse(v,sum);
+fn traverse(parsed: &Value, sum: &mut i64) {
+    match parsed {
+        Value::Object(map) => {
+            if !map.values().any(|v| v.as_str() == Some("red")) {
+                for value in map.values() {
+                    traverse(value, sum);
                 }
             }
         }
-    }
-    else if parsed.is_array(){
-        if let Some(tmp) = parsed.as_array(){
-            for v in tmp.iter(){
-                traverse(v, sum);
+        Value::Array(arr) => {
+            for value in arr {
+                traverse(value, sum);
             }
         }
+        Value::Number(num) if num.is_i64() => {
+            if let Some(val) = num.as_i64() {
+                *sum += val;
+            }
+        }
+        _ => {}
     }
 }
