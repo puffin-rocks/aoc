@@ -80,7 +80,7 @@ impl Solve for Advent {
 
     fn compute_part2_answer(&self,  _: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
-        let mut lights = [[0usize; 1000]; 1000];
+        let mut lights = vec![vec![0usize; 1000]; 1000];
         for (action, from, to) in self.instructions.iter() {
             for x in *from.x() as usize..=*to.x() as usize{
                 for y in *from.y() as usize..=*to.y() as usize{
