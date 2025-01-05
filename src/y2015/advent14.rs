@@ -70,6 +70,7 @@ impl Solve for Advent {
         Ok(())
     }
     fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(1))?;
         let t: usize = 2503;
         let result = self.reindeers.iter().map(|r| {
             r.location(t)
@@ -77,6 +78,7 @@ impl Solve for Advent {
         assert_display(result, None, 2655, "Maximal distance", false)
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
         let mut scores: HashMap<&String, usize> = HashMap::new();
         for r in self.reindeers.iter(){
             scores.insert(&r.name, 0);

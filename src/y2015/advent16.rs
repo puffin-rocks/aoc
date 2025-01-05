@@ -53,6 +53,7 @@ impl Solve for Advent {
         Ok(())
     }
     fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(1))?;
         let mut aunt: Option<usize> = None;
         for (i, a_memory) in self.aunts.iter() {
             if a_memory.iter().zip(self.memory.iter()).all(|(v1, v2)| match v1 {
@@ -69,6 +70,7 @@ impl Solve for Advent {
         }
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
+        self.check_input(Some(2))?;
         let greater = hashset![1usize, 7usize];
         let fewer= hashset![3usize, 6usize];
 
