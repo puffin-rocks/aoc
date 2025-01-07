@@ -13,6 +13,7 @@ macro_rules! hashset{
             $(
             set.insert($x);
             )*
+            let _ = &mut set;
             set
         }
     };
