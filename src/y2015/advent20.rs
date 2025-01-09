@@ -38,7 +38,6 @@ impl Solve for Advent {
     }
     fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
         self.check_input(Some(1))?;
-
         let mut n_houses = 1;
         while max_presents(n_houses)<self.number{
             n_houses*=10;
@@ -83,7 +82,14 @@ impl Solve for Advent {
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
-        Err(String::from("Not implemented"))
+        let mut min_number =1;
+        loop{
+            if get_house_presents_capped(min_number)>=self.number{
+                break;
+            }
+            min_number+=1;
+        }
+        assert_display(min_number, None, 786240, "First house number", false)
     }
 }
 
@@ -100,6 +106,28 @@ fn get_house_presents(n: usize) -> usize {
         }
     }
     divisors.iter().sum::<usize>()*10
+}
+
+fn get_house_presents_capped(n: usize) -> usize {
+    let mut divisors = HashSet::new();
+    let sqrt_n = (n as f64).sqrt() as usize;
+
+    for i in 1..=sqrt_n {
+        if n % i == 0 {
+            divisors.insert(i); // Add the divisor
+            if i != n / i {
+                divisors.insert(n / i); // Add the complement divisor
+            }
+        }
+    }
+    let mut divisors_passed: HashSet<usize> = HashSet::new();
+    for d in divisors.iter(){
+        if d*50>=n{
+
+            divisors_passed.insert(*d);
+        }
+    }
+    divisors_passed.iter().sum::<usize>()*11
 }
 
 fn max_presents(n_houses:usize)->usize{
