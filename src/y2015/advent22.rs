@@ -80,6 +80,30 @@ impl Default for Advent {
     }
 }
 
+impl Advent{
+    fn solve(&self,
+             hard_mode: bool,
+             result_prd: usize,
+             part: u8
+    ) -> Result<String, String> {
+        self.check_input(Some(part))?;
+        let mut curr_min_mana: Option<usize> = None;
+        let mut memory: HashMap<[usize;6], Option<usize>> = HashMap::new(); //player hp, player mana, boss hp, shield_time, poison_time, recharge_time
+        let mut effects: [Effect; 5] = [Effect{time: 0, spell: Spell::MagicMissile},
+            Effect{time: 0, spell: Spell::Drain},
+            Effect{time: 0, spell: Spell::Shield},
+            Effect{time: 0, spell: Spell::Poison},
+            Effect{time: 0, spell: Spell::Recharge}
+        ];
+        let result = player_turn(&mut self.player.clone(), &mut self.enemy.clone(), &mut effects,
+                                 &mut memory, 0, &mut curr_min_mana, hard_mode);
+        match result{
+            Some(mana) => assert_display(mana, None, result_prd, "Least amount of mana", false),
+            None => Err(String::from("Player always loses"))
+        }
+    }
+}
+
 impl Solve for Advent {
 
     fn get_label(&self) -> &Label{ &self.label }
@@ -90,7 +114,6 @@ impl Solve for Advent {
             match key{
                 "Hit Points" => self.enemy.hit_points = value.parse::<isize>()?,
                 "Damage" => self.enemy.damage= value.parse::<usize>()?,
-                "Armor" => self.enemy.armor = value.parse::<usize>()?,
                 _ => unreachable!()
             }
         }
@@ -103,31 +126,16 @@ impl Solve for Advent {
         Ok(())
     }
     fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
-        self.check_input(Some(1))?;
-        let mut curr_min_mana: Option<usize> = None;
-        let mut memory: HashMap<[usize;6], Option<usize>> = HashMap::new(); //player hp, player mana, boss hp, shield_time, poison_time, recharge_time
-        let mut effects: [Effect; 5] = [Effect{time: 0, spell: Spell::MagicMissile},
-            Effect{time: 0, spell: Spell::Drain},
-            Effect{time: 0, spell: Spell::Shield},
-            Effect{time: 0, spell: Spell::Poison},
-            Effect{time: 0, spell: Spell::Recharge}
-        ];
-        let result = player_turn(&mut self.player.clone(), &mut self.enemy.clone(), &mut effects,
-                                 &mut memory, 0, &mut curr_min_mana);
-        match result{
-            Some(mana) => assert_display(mana, None, 1824, "Least amount of mana", false),
-            None => Err(String::from("Player always loses"))
-        }
+        self.solve(false, 1824, 1)
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
-        self.check_input(Some(2))?;
-        Err(String::from("Not implemented"))
+        self.solve(true, 1937, 2)
     }
 }
 
 fn enemy_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
-              memory: &mut HashMap<[usize;6], Option<usize>>, total_mana: usize, curr_min_mana: &mut Option<usize>) ->Option<usize>{
-    //println!("{:?}", (&player, &enemy, &effects, total_mana, &curr_min_mana));
+              memory: &mut HashMap<[usize;6], Option<usize>>, total_mana: usize, curr_min_mana: &mut Option<usize>, hard_mode: bool) ->Option<usize>{
+
     for e in effects.iter_mut(){
         e.impact(player, enemy);
     }
@@ -148,15 +156,22 @@ fn enemy_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
         return None; //lost
     }
     player.armor = 0;
-    player_turn(player, enemy, effects, memory, total_mana, curr_min_mana)
+    player_turn(player, enemy, effects, memory, total_mana, curr_min_mana, hard_mode)
 }
 
 fn player_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
-               memory: &mut HashMap<[usize;6], Option<usize>>, total_mana: usize, curr_min_mana: &mut Option<usize>)->Option<usize>{
-    //println!("{:?}", (&player, &enemy, &effects, total_mana, &curr_min_mana));
+               memory: &mut HashMap<[usize;6], Option<usize>>, total_mana: usize, curr_min_mana: &mut Option<usize>, hard_mode: bool)->Option<usize>{
+
     if let Some(m) =  curr_min_mana{
         if *m<total_mana{
             return None
+        }
+    }
+
+    if hard_mode {
+        player.hit_points -= 1;
+        if player.hit_points < 1 {
+            return None; //lost
         }
     }
 
@@ -181,7 +196,7 @@ fn player_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
                     let mut effects_next = effects.clone();
                     effects_next[i].reset();
                     if let Some(m) = enemy_turn(&mut player_next, &mut enemy.clone(), &mut effects_next,
-                    memory, total_mana+spell_cost, curr_min_mana){
+                    memory, total_mana+spell_cost, curr_min_mana, hard_mode){
                         total_manas.push(m);
                     }
 
