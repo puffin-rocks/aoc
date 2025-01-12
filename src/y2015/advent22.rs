@@ -50,15 +50,8 @@ impl Effect{
     }
 }
 
-// Magic Missile costs 53 mana. It instantly does 4 damage.
-// Drain costs 73 mana. It instantly does 2 damage and heals you for 2 hit points.
-// Shield costs 113 mana. It starts an effect that lasts for 6 turns. While it is active, your armor is increased by 7.
-// Poison costs 173 mana. It starts an effect that lasts for 6 turns. At the start of each turn while it is active, it deals the boss 3 damage.
-// Recharge costs 229 mana. It starts an effect that lasts for 5 turns. At the start of each turn while it is active, it gives you 101 new mana.
-
 #[derive(Debug, Clone)]
 struct Stats{
-    name: String,
     hit_points: isize,
     damage: usize,
     armor:usize,
@@ -74,8 +67,8 @@ impl Default for Advent {
     fn default() -> Self{
         Self{
             label: Label::new(22, 2015),
-            enemy: Stats{name: String::from("Enemy"), hit_points: 0, damage: 0, armor: 0, mana:0},
-            player: Stats{name: String::from("Player"), hit_points: 50, damage: 0, armor: 0, mana: 500},
+            enemy: Stats{hit_points: 0, damage: 0, armor: 0, mana:0},
+            player: Stats{hit_points: 50, damage: 0, armor: 0, mana: 500},
         }
     }
 }
@@ -162,10 +155,8 @@ fn enemy_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
 fn player_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
                memory: &mut HashMap<[usize;6], Option<usize>>, total_mana: usize, curr_min_mana: &mut Option<usize>, hard_mode: bool)->Option<usize>{
 
-    if let Some(m) =  curr_min_mana{
-        if *m<total_mana{
-            return None
-        }
+    if curr_min_mana.map_or(false, |m| total_mana >= m) {
+        return None; // Exceeds current minimum mana
     }
 
     if hard_mode {
@@ -175,8 +166,14 @@ fn player_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
         }
     }
 
-    let key = [player.hit_points as usize, player.mana, enemy.hit_points as usize,
-        effects[2].time, effects[3].time, effects[4].time];
+    let key = [
+        player.hit_points as usize,
+        player.mana,
+        enemy.hit_points as usize,
+        effects[2].time,
+        effects[3].time,
+        effects[4].time
+    ];
     let value = memory.get(&key);
     match value{
         Some(value)=> {
@@ -187,7 +184,7 @@ fn player_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
                 e.impact(player, enemy);
             }
             player.armor = 0;
-            let mut total_manas: Vec<usize> = Vec::new();
+            let mut min_mana = None;
             for i in 0..effects.len(){
                 let spell_cost = effects[i].cost();
                 if effects[i].time<1 && player.mana>=spell_cost{
@@ -195,21 +192,21 @@ fn player_turn(player: &mut Stats, enemy: &mut Stats, effects: &mut [Effect; 5],
                     player_next.mana-=spell_cost;
                     let mut effects_next = effects.clone();
                     effects_next[i].reset();
-                    if let Some(m) = enemy_turn(&mut player_next, &mut enemy.clone(), &mut effects_next,
-                    memory, total_mana+spell_cost, curr_min_mana, hard_mode){
-                        total_manas.push(m);
+                    if let Some(mana) = enemy_turn(
+                        &mut player_next,
+                        &mut enemy.clone(),
+                        &mut effects_next,
+                        memory,
+                        total_mana+spell_cost,
+                        curr_min_mana,
+                        hard_mode){
+                            min_mana = Some(min_mana.map_or(mana, |m| if mana < m { mana } else { m }));
                     }
 
                 }
             }
-            let value = total_manas.iter().min();
-            let result = if value.is_some(){
-                Some(*value.unwrap())
-            }else{
-                None
-            };
-            memory.insert(key, result);
-            result
+            memory.insert(key, min_mana);
+            min_mana
         }
     }
 }
