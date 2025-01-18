@@ -90,7 +90,7 @@ impl Solve for Advent {
                 }
             }
         }
-        assert_display(cnt, None, 3320, "Nummber of non-overlapping pairs", test_mode)
+        assert_display(cnt, None, 3320, "Number of non-overlapping pairs", test_mode)
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
         self.check_input(Some(2))?;
