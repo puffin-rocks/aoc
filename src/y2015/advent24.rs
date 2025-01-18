@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
+use std::collections::{BTreeMap, HashSet};
 use crate::utils::{assert_display, Label, Solve};
 
 pub(crate) struct Advent {
@@ -31,9 +31,8 @@ impl Advent {
         stack.insert((0, 1, 0), Vec::new());
         for p in packages.iter().rev() {
             let mut stack_next: BTreeMap<(usize, usize, usize), Vec<usize>> = BTreeMap::new();
-            stack.insert((0, 1, 0), Vec::new());
             while let Some(((n, pd, s), content)) = stack.pop_first() {
-                if n+1<=min_size{//n+1<=min_size   { //
+                if n+1<=min_size{
                     if s + p <= target_weight{ //
                         let mut content_next = content.clone();
                         content_next.push(*p);
@@ -81,7 +80,6 @@ impl Solve for Advent {
         self.check_input(None)?;
         println!("Number of packages: {}", self.packages.len());
         println!("Weight of packages: {}", self.packages.iter().sum::<usize>());
-       // assert_eq!(self.packages.len(), self.packages.iter().collect::<HashSet<_>>().len());
         Ok(())
     }
     fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String>{
@@ -89,72 +87,46 @@ impl Solve for Advent {
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String>{
         self.solve(4usize, 77387711, 2)
-        // let sum: usize = self.packages.iter().sum();
-        // let target = sum / 4;
-        // println!("{}", (1..self.packages.len()).find_map(|size| combinations(&self.packages.iter().map(|&x| x as u64 ).collect::<Vec<u64>>(), target as u64, size)).unwrap());
     }
 }
 
-fn do_split_exist(packages: &mut Vec<usize>, n_buckets:usize, target_weight: usize) -> bool{
-    packages.sort_unstable();
-    let mut stack: VecDeque<Vec<Vec<usize>>> = VecDeque::new();
-    stack.push_back(vec![Vec::new(); n_buckets]);
-    for p in packages.iter().rev() {
-        let mut stack_next: VecDeque<Vec<Vec<usize>>> = VecDeque::new();
-        while let Some(groups) = stack.pop_front() {
-            for i in 0..groups.len() {
-                if groups[i].iter().sum::<usize>() + p <= target_weight {
-                    let mut groups_next = groups.clone();
-                    groups_next[i].push(*p);
-                    stack_next.push_back(groups_next);
-                }
+fn do_split_exist(packages: &mut Vec<usize>, n_buckets: usize, target_weight: usize) -> bool {
+    use std::collections::HashSet;
+
+    // Sort in descending order to prioritize placing larger elements first.
+    packages.sort_unstable_by(|a, b| b.cmp(a));
+
+    let mut stack: Vec<(Vec<usize>, usize)> = vec![(vec![0; n_buckets], 0)]; // (bucket sums, index of current package)
+    let mut seen = HashSet::new();
+
+    while let Some((mut bucket_sums, idx)) = stack.pop() {
+        // If we've already visited this state, skip it.
+        if !seen.insert((bucket_sums.clone(), idx)) {
+            continue;
+        }
+
+        // If all packages have been placed, we have a valid distribution.
+        if idx == packages.len() {
+            return true;
+        }
+
+        let package = packages[idx];
+        for i in 0..n_buckets {
+            // Skip if adding this package exceeds the target weight.
+            if bucket_sums[i] + package > target_weight {
+                continue;
+            }
+
+            bucket_sums[i] += package;
+            stack.push((bucket_sums.clone(), idx + 1));
+            bucket_sums[i] -= package;
+
+            // If the bucket is empty, stop exploring other buckets to avoid redundant states.
+            if bucket_sums[i] == 0 {
+                break;
             }
         }
-        stack = stack_next;
     }
-    !stack.is_empty()
-}
 
-
-/// Check all combinations of `size` items returning `None` if no valid solution is found.
-fn combinations(packages: &Vec<u64>, target: u64, size: usize) -> Option<u64> {
-    // Mantain `size` indices, initially set to 0, 1, 2...
-    let mut indices: Vec<_> = (0..size).collect();
-    // Initial weight for first `size` items.
-    let mut weight: u64 = packages.iter().take(size).sum();
-
-    loop {
-        // Check for success
-        if weight == target {
-            let product = indices.iter().map(|&i| packages[i]).product();
-            println!("{:?}", indices.iter().map(|&i| packages[i]).collect::<Vec<_>>());
-            return Some(product);
-        }
-
-        // Try to advance the last index. If the last index is at the end, then try to advance
-        // the previous index until we reach the root.
-        let mut depth = size - 1;
-        while indices[depth] == packages.len() - size + depth {
-            if depth == 0 {
-                return None;
-            }
-            depth -= 1;
-        }
-
-        // Update the first index that is not at the end.
-        let from = indices[depth];
-        let to = indices[depth] + 1;
-        indices[depth] = to;
-        weight = weight - packages[from] + packages[to];
-        depth += 1;
-
-        // "Wrap" following indices to 1 more than the previous.
-        while depth < size {
-            let from = indices[depth];
-            let to = indices[depth - 1] + 1;
-            indices[depth] = to;
-            weight = weight - packages[from] + packages[to];
-            depth += 1;
-        }
-    }
+    false
 }
