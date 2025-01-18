@@ -6,6 +6,7 @@ mod utils;
 mod geometry;
 mod y2024;
 mod y2015;
+mod y2016;
 
 use std::time::{Duration, Instant};
 
@@ -107,8 +108,9 @@ fn main() {
 
     let mut solutions =
     match year{
-        2024 => y2024::collect_solutions(),
         2015 => y2015::collect_solutions(),
+        2016 => y2016::collect_solutions(),
+        2024 => y2024::collect_solutions(),
         _ => unreachable!()
     };
 

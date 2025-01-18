@@ -7,3 +7,4 @@ input/2024/day15_test_p1_small.txt
 input/2024/day15_test_p2_small.txt
 input/2024/day16_test1.txt
 /input/2024/*_alt.txt
+src/y2016/advent00.rs
