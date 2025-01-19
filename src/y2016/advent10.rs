@@ -13,52 +13,58 @@ enum Instruction{
     OutputOutput(usize, usize, usize)
 }
 impl Instruction{
-    fn apply(&self, bots: &mut HashMap<usize, HashSet<usize>>, bins: &mut HashMap<usize, HashSet<usize>>)-> bool{
-        match self {
-            Instruction::Direct(value,target) =>{
-                bots.entry(*target).or_insert_with(HashSet::new).insert(*value);
-                return true
-            }
-            Instruction::BotBot(source, low, high) => {
-                if let Some(s) = bots.get(&source){
-                    if s.len()==2{
-                        let v = s.iter().sorted_by(|&v1,&v2| v1.cmp(v2)).collect::<Vec<_>>();
-                        let lower = *v[0];
-                        let higher = *v[1];
-                        bots.entry(*source).or_insert_with(HashSet::new).clear();
-                        bots.entry(*low).or_insert_with(HashSet::new).insert(lower);
-                        bots.entry(*high).or_insert_with(HashSet::new).insert(higher);
-                        return true
+    fn source(&self)->Option<&usize>{
+        match self{
+            Instruction::Direct(_, _) => None,
+            Instruction::BotBot(source, _, _) |
+            Instruction::OutputBot(source, _, _) |
+            Instruction::OutputOutput(source, _, _) => Some(source)
+        }
+    }
+    fn apply(
+        &self,
+        bots: &mut HashMap<usize, HashSet<usize>>,
+        bins: &mut HashMap<usize, HashSet<usize>>,
+    ) -> bool {
+        match self.source(){
+            Some(source)=>{
+                if let Some(s) = bots.get(source) {
+                    if s.len() == 2 {
+                        let mut values = s.iter().cloned().collect::<Vec<_>>();
+                        values.sort_unstable();
+                        let (lower, higher) = (values[0], values[1]);
+                        bots.get_mut(source).unwrap().clear();
+
+                        match self {
+                            Instruction::Direct(_, _) => unreachable!(),
+                            Instruction::BotBot(_, low, high) => {
+                                bots.entry(*low).or_default().insert(lower);
+                                bots.entry(*high).or_default().insert(higher);
+                            }
+                            Instruction::OutputBot(_, low, high) => {
+                                bins.entry(*low).or_default().insert(lower);
+                                bots.entry(*high).or_default().insert(higher);
+                            }
+                            Instruction::OutputOutput(_, low, high) => {
+                                bins.entry(*low).or_default().insert(lower);
+                                bins.entry(*high).or_default().insert(higher);
+                            }
+                        }
+                        return true;
                     }
                 }
-            }
-            Instruction::OutputBot(source, low, high) => {
-                if let Some(s) = bots.get(&source){
-                    if s.len()==2{
-                        let v = s.iter().sorted_by(|&v1,&v2| v1.cmp(v2)).collect::<Vec<_>>();
-                        let lower = *v[0];
-                        let higher = *v[1];
-                        bots.entry(*source).or_insert_with(HashSet::new).clear();
-                        bins.entry(*low).or_insert_with(HashSet::new).insert(lower);
-                        bots.entry(*high).or_insert_with(HashSet::new).insert(higher);
-                        return true
-                    }
-                }
-            }
-            Instruction::OutputOutput(source, low, high) => {
-                if let Some(s) = bots.get(&source){
-                    if s.len()==2{
-                        let v = s.iter().sorted_by(|&v1,&v2| v1.cmp(v2)).collect::<Vec<_>>();
-                        let lower = *v[0];
-                        let higher = *v[1];
-                        bots.entry(*source).or_insert_with(HashSet::new).clear();
-                        bins.entry(*low).or_insert_with(HashSet::new).insert(lower);
-                        bins.entry(*high).or_insert_with(HashSet::new).insert(higher);
-                        return true
-                    }
+            },
+            None=>{
+                match self {
+                    Instruction::Direct(value, target) => {
+                        bots.entry(*target).or_insert_with(HashSet::new).insert(*value);
+                        return true;
+                    },
+                    _ => unreachable!()
                 }
             }
         }
+
         false
     }
 }
