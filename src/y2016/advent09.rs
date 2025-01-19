@@ -1,4 +1,3 @@
-use std::cmp::min;
 use regex::Regex;
 use crate::utils::{assert_display, Label, Solve};
 
