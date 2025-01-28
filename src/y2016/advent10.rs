@@ -1,5 +1,4 @@
 use std::collections::{HashMap, HashSet};
-use itertools::Itertools;
 use regex::Regex;
 use crate::hashset;
 use crate::utils::{assert_display, Label, Solve};
