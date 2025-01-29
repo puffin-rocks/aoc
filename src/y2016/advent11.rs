@@ -43,37 +43,42 @@ impl Advent {
         let curr_floor = 0usize;
         let mut curr_step = 0usize;
         let mut states: HashMap<(usize, Vec<[usize;3]>), usize> = HashMap::new();
-        states.insert((curr_floor, condense_state(&curr_state)), curr_step);
+        match check_condense_state(&curr_state){
+            None => Err(String::from("Initial state is invalid")),
+            Some(cds) =>{
+                states.insert((curr_floor, cds), curr_step);
 
-        let mut queue = hashset!((curr_floor, curr_state));
-        let mut result: Option<usize> = None;
-        loop {
-            let mut queue_next: HashSet<(usize, Vec<Vec<Component>>)> = HashSet::new();
-            let mut found_end_state = false;
-            for (curr_floor, curr_state) in queue.iter(){
-                let next = next_states(curr_state, *curr_floor, self.n_floors, curr_step, &mut states);
-                for (next_floor, s) in next{
-                    if end_condition(&s, self.n_floors){
-                        found_end_state = true;
-                        result = Some(curr_step+1);
-                        break;
-                    }else{
-                        queue_next.insert((next_floor, s));
+                let mut queue = hashset!((curr_floor, curr_state));
+                let mut result: Option<usize> = None;
+                loop {
+                    let mut queue_next: HashSet<(usize, Vec<Vec<Component>>)> = HashSet::new();
+                    let mut found_end_state = false;
+                    for (curr_floor, curr_state) in queue.iter(){
+                        for (next_floor, s) in
+                            next_states(curr_state, *curr_floor, self.n_floors, curr_step, &mut states){
+                            if end_condition(&s, self.n_floors){
+                                found_end_state = true;
+                                result = Some(curr_step+1);
+                                break;
+                            }else{
+                                queue_next.insert((next_floor, s));
+                            }
+                        }
+                        if found_end_state{
+                            break;
+                        }
                     }
+                    queue = queue_next;
+                    if queue.len() ==0{
+                        break;
+                    }
+                    curr_step+=1;
                 }
-                if found_end_state{
-                    break;
+                match result {
+                    None => Err(String::from("Not solution found")),
+                    Some(n_steps) => assert_display(n_steps, None, result_prd, "Minimal number of steps", false)
                 }
             }
-            queue = queue_next;
-            if queue.len() ==0{
-                break;
-            }
-            curr_step+=1;
-        }
-        match result {
-            None => Err(String::from("Not solution found")),
-            Some(n_steps) => assert_display(n_steps, None, result_prd, "Minimal number of steps", false)
         }
     }
 }
@@ -131,36 +136,7 @@ impl Solve for Advent {
     }
 }
 
-fn check_state(curr_state: &Vec<Vec<Component>>)->bool{
-    for floor_components in curr_state{
-        let mut generators: Vec<&char> = Vec::new();
-        let mut microchips: Vec<&char> = Vec::new();
-        for el in floor_components{
-            match el {
-                Component::Generator(ch) => generators.push(ch),
-                Component::Microchip(ch) => microchips.push(ch),
-            }
-        }
-        if generators.is_empty(){
-            continue;
-        }
-        for m in microchips.iter(){
-            let mut orphan = true;
-            for g in generators.iter(){
-                if m==g{
-                    orphan = false;
-                    break;
-                }
-            }
-            if orphan{
-                return false;
-            }
-        }
-    }
-    true
-}
-
-fn condense_state(curr_state: &Vec<Vec<Component>>)->Vec<[usize;3]>{
+fn check_condense_state(curr_state: &Vec<Vec<Component>>)->Option<Vec<[usize;3]>>{
     let mut result: Vec<[usize;3]> = Vec::new();
     for floor_components in curr_state{
         let mut generators: Vec<&char> = Vec::new();
@@ -171,27 +147,30 @@ fn condense_state(curr_state: &Vec<Vec<Component>>)->Vec<[usize;3]>{
                 Component::Microchip(ch) => microchips.push(ch),
             }
         }
-        let mut repr = [0usize;3];
-        for m in microchips.iter(){
-            let mut orphan = true;
-            for g in generators.iter(){
-                if m==g{
-                    orphan = false;
-                    break;
+        let mut repr = [0usize; 3];
+        if generators.is_empty(){
+            repr[2] = microchips.len();
+        }else {
+            for m in microchips.iter() {
+                let mut orphan = true;
+                for g in generators.iter() {
+                    if m == g {
+                        orphan = false;
+                        break;
+                    }
                 }
-            }
-            if orphan{
-                repr[2]+=1;
-            }else{
-                repr[0]+=1;
+                if orphan {
+                    return None;
+                } else {
+                    repr[0] += 1;
+                }
+                repr[1] = generators.len()-repr[0];
             }
         }
-        repr[1]=generators.len()-repr[0];
         result.push(repr);
     }
-    result
+    Some(result)
 }
-
 
 fn end_condition(curr_state: &Vec<Vec<Component>>, n_floors: usize) ->bool{
     for ix in 0..n_floors-1{
@@ -214,8 +193,8 @@ fn next_states(curr_state: &Vec<Vec<Component>>, curr_floor: usize, n_floors: us
     let mut result: HashSet<(usize, Vec<Vec<Component>>)> = HashSet::new();
 
     let mut process_state = |next_state: Vec<Vec<Component>>, next_floor: usize, result: &mut HashSet<(usize, Vec<Vec<Component>>)>| {
-        if check_state(&next_state) {
-            let key = (next_floor, condense_state(&next_state));
+        if let Some(cds) = check_condense_state(&next_state){
+            let key = (next_floor, cds);
             if states.get(&key).map_or(true, |&n| curr_step + 1 < n) {
                 states.insert(key, curr_step + 1);
                 result.insert((next_floor, next_state));
