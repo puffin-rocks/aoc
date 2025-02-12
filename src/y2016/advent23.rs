@@ -38,9 +38,7 @@ impl Command {
             register_offset
         }
     }
-    // if self.register_target.is_none(){
-    // println!("{:?}", &self);
-    // }
+
     fn run(&self, index: usize, registers: &mut HashMap<char, isize>) -> (usize, Option<usize>) {
         match self.instruction {
             Instruction::CPY | Instruction::JNZ | Instruction::TGL => {
@@ -116,15 +114,6 @@ impl Command {
     }
 }
 
-// tgl x toggles the instruction x away (pointing at instructions like jnz does: positive means forward; negative means backward):
-//
-// For one-argument instructions, inc becomes dec, and all other one-argument instructions become inc.
-// For two-argument instructions, jnz becomes cpy, and all other two-instructions become jnz.
-// The arguments of a toggled instruction are not affected.
-// If an attempt is made to toggle an instruction outside the program, nothing happens.
-// If toggling produces an invalid instruction (like cpy 1 2) and an attempt is later made to execute that instruction, skip it instead.
-// If tgl toggles itself (for example, if a is 0, tgl a would target itself and become inc a), the resulting instruction is not executed until the next time it is reached.
-
 pub(crate) struct Advent {
     label: Label,
     program: Vec<Command>,
@@ -137,36 +126,6 @@ impl Default for Advent {
             program: Vec::new(),
             register_keys: hashset!['a', 'b', 'c', 'd'],
         }
-    }
-}
-
-impl Advent {
-    fn solve(&self,
-             registers: &mut HashMap<char, isize>,
-             result_prd: isize,
-             part: u8,
-    ) -> Result<String, String> {
-        self.check_input(Some(part))?;
-        let mut index = 0;
-        let mut toggle:Option<usize>;
-        let mut program = self.program.clone();
-        //println!("{:?}", registers);
-        while index < program.len() {
-            //println!("{:?}", program.get(index));
-            (index, toggle) = program.get(index).unwrap().run(index, registers);
-            //println!("{:?}", (index, &registers));
-            match toggle{
-                None => {},
-                Some(toggle_index)=>{
-                    if toggle_index<program.len(){
-                        //println!("{:?}", program[toggle_index]);
-                        program[toggle_index] = program[toggle_index].toggle();
-                        //println!("{:?}", program[toggle_index]);
-                    }
-                }
-            }
-        }
-        assert_display(*registers.get(&'a').unwrap(), None, result_prd, "Value in 'a'", false)
     }
 }
 
@@ -241,11 +200,59 @@ impl Solve for Advent {
         self.check_input(Some(1))?;
         let mut registers: HashMap<char, isize> = HashMap::new();
         registers.insert('a', 7);
-        self.solve(&mut registers,   11424, 1)
 
+        let mut index = 0;
+        let mut toggle:Option<usize>;
+        let mut program = self.program.clone();
+        while index < program.len() {
+            (index, toggle) = program.get(index).unwrap().run(index, &mut registers);
+            match toggle{
+                None => {},
+                Some(toggle_index)=>{
+                    if toggle_index<program.len(){
+                        program[toggle_index] = program[toggle_index].toggle();
+                    }
+                }
+            }
+        }
+        assert_display(*registers.get(&'a').unwrap(), None, 11424, "Value in 'a'", false)
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String> {
         self.check_input(Some(2))?;
-        Err(String::from("Not implemented"))
+        let mut registers: HashMap<char, isize> = HashMap::new();
+        registers.insert('a', 12);
+
+        let mut index = 0;
+        let mut toggle:Option<usize>;
+        let mut program = self.program.clone();
+        while index < program.len() {
+            (index, toggle) = program.get(index).unwrap().run(index, &mut registers);
+            match toggle{
+                None => {},
+                Some(toggle_index)=>{
+                    if toggle_index<program.len(){
+                        program[toggle_index] = program[toggle_index].toggle();
+                    }
+                }
+            }
+            if index == 10{
+                //shortcut
+                let b = *registers.get(&'b').unwrap()-1;
+                registers.insert('b', b);
+                registers.insert('c', 2*b);
+                index = 16;
+            }
+            if index == 17{
+                //shortcut
+                let a = *registers.get(&'a').unwrap();
+                let b = *registers.get(&'b').unwrap();
+                if toggle!=Some(18) {
+                    registers.insert('a', a * b);
+                    registers.insert('c', 0);
+                    index = 9;
+                }
+            }
+        }
+        assert_display(*registers.get(&'a').unwrap(), None, 479007984, "Value in 'a'", false)
     }
 }
