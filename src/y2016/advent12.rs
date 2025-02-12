@@ -154,12 +154,10 @@ impl Solve for Advent {
         Ok(())
     }
     fn compute_part1_answer(&self, _test_mode: bool) -> Result<String, String> {
-        self.check_input(Some(1))?;
         let mut registers: HashMap<char, isize> = HashMap::new();
         self.solve(&mut registers,  318020, 1)
     }
     fn compute_part2_answer(&self, _test_mode: bool) -> Result<String, String> {
-        self.check_input(Some(2))?;
         let mut registers: HashMap<char, isize> = HashMap::new();
         registers.insert('c',1);
         self.solve(&mut registers,  9227674, 2)
