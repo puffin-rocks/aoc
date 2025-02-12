@@ -15,9 +15,6 @@ impl Default for Advent {
     }
 }
 
-type State = (usize, usize, usize, Vec<usize>, Vec<usize>, usize, usize);
-//step, |0-G|, |G-E|, used, available, ind(G), ind(E)
-
 impl Solve for Advent {
 
     fn get_label(&self) -> &Label{ &self.label }
@@ -70,12 +67,53 @@ impl Solve for Advent {
                 avlb[idx]=*a;
             }
         }
+        //checking that separation holds
         let ind_empty = find_empty(&used);
-        let result = iterate((distance(max_x-1, ind_empty, max_x), max_x-1, 0, //( 0, max_x-1, distance(max_x-1, ind_empty, max_x),
-                              used, avlb,
-                              max_x-1, ind_empty), max_x, max_y);
-        println!("{:?}", result);
-        Err(String::from("Not implemented"))
+        let capacity_empty= avlb[ind_empty];
+        let mut capacity_small:Vec<usize> = Vec::new();
+        let mut used_small:Vec<usize> = Vec::new();
+        let mut avlb_large:Vec<usize> = Vec::new();
+        let mut used_large:Vec<usize> = Vec::new();
+        for i in 0..n{
+            if used[i]>0 {
+                if used[i] <= capacity_empty {
+                    capacity_small.push(avlb[i]+used[i]);
+                    used_small.push(used[i]);
+                } else {
+                    avlb_large.push(avlb[i]);
+                    used_large.push(used[i]);
+                }
+            }
+        }
+
+        assert_eq!(capacity_small.iter().min().unwrap()>used_small.iter().max().unwrap(), true);
+        assert_eq!(used_large.iter().min().unwrap()>capacity_small.iter().max().unwrap(), true);
+        assert_eq!(avlb_large.iter().max().unwrap()<used_small.iter().min().unwrap(), true);
+
+        let mut symbols: Vec<char> = Vec::new();
+        for i in 0..n{
+            if i == max_x-1{
+                symbols.push('G');
+            }
+            else {
+                if used[i] > 0 {
+                    if used[i] <= capacity_empty {
+                        symbols.push('.');
+                    } else {
+                        symbols.push('#');
+                    }
+                } else {
+                    symbols.push('_');
+                }
+            }
+        }
+
+        let result = iterate((symbols, ind_empty), max_x, max_y);
+        match result{
+            None => Err(String::from("Not solution found")),
+            Some(v) => assert_display(v, None, 215, "Min number of steps", false)
+        }
+
     }
 }
 
@@ -94,58 +132,45 @@ fn find_empty(used: &Vec<usize>)-> usize{
     used.iter().position(|v| *v==0).unwrap()
 }
 
-fn iterate(state: State, max_x: usize, max_y:usize) -> Option<usize>{
-    let mut states: HashSet<(Vec<usize>, Vec<usize>, usize)> = HashSet::new();
-    states.insert( (state.3.clone(), state.4.clone(), state.5));
-    let mut queue: BTreeSet<State> = BTreeSet::new();
-    queue.insert(state);
-    let mut cnt = 0;
-    let mut dst = 40;
-    while let Some((d_e, d_0, step, used, avlb, loc_g, loc_e)) = queue.pop_first() { // step, d_0, d_e
-        //println!(" in {:?}", (d_e, d_0, step, loc_g, loc_e));
-        let i = (loc_e%max_x) as isize;
-        let j = (loc_e/max_x) as isize;
-        let a = avlb[loc_e];
-        for (i_n, j_n) in [(i-1, j), (i+1, j), (i, j-1), (i, j+1)]{
-            if i_n>-1 && i_n<max_x as isize && j_n>-1 && j_n<max_y as isize{
-                let idx_n = (i_n + j_n*(max_x as isize)) as usize;
-                let to_move = used[idx_n];
-                if a>=to_move{
-                    let mut used_next = used.clone();
-                    let mut avlb_next = avlb.clone();
-                    used_next[idx_n] = 0;
-                    avlb_next[idx_n]+=to_move;
-                    used_next[loc_e]+=to_move;
-                    avlb_next[loc_e]-=to_move;
-
-                    let (loc_g_next, d_0_next) = if idx_n == loc_g{
-                        (loc_e, (i+j) as usize)
-                    }else{
-                        (loc_g, d_0)
-                    };
-                    if loc_g_next == 0{
+fn iterate(state: (Vec<char>, usize), max_x: usize, max_y:usize) -> Option<usize>{
+    let mut states: HashSet<Vec<char>> = HashSet::new();
+    states.insert( state.0.clone());
+    let mut queue: Vec<(Vec<char>, usize)> = Vec::new();
+    queue.push(state);
+    let mut step = 0;
+    loop{
+        //println!("{:?}", (step, queue.len()));
+        let mut queue_next: Vec<(Vec<char>, usize)> = Vec::new();
+        for (symbols, loc_e) in queue.iter(){
+            let i = (*loc_e%max_x) as isize;
+            let j = (*loc_e/max_x) as isize;
+            for (i_n, j_n) in [(i-1, j), (i+1, j), (i, j-1), (i, j+1)] {
+                if i_n > -1 && i_n < max_x as isize && j_n > -1 && j_n < max_y as isize {
+                    let idx_n = (i_n + j_n * (max_x as isize)) as usize;
+                    if *loc_e == 0 && symbols[idx_n] == 'G'{
                         return Some(step+1);
                     }
-                    let d_next = distance(loc_g_next, idx_n, max_x);
-                    if d_next<dst{
-                        println!("{}", d_next);
-                        dst = d_next;
-                    }
-                    let state = (d_next, d_0_next, step+1,  used_next, avlb_next, loc_g_next, idx_n); // step+1, d_0_next, distance(loc_g_next, idx_n, max_x),
-                    let substate = (state.3.clone(), state.4.clone(), state.5);
-                    if !states.contains(&substate){
-                        states.insert(substate);
-                        queue.insert(state);
-                        cnt+=1;
-
-                        if cnt>10_000 {
-                            println!("out {:?}", ((i_n, j_n), d_next, d_0_next, step+1, loc_g_next, idx_n));
-                            return None;
+                    if symbols[idx_n] == '.' || symbols[idx_n] == 'G'{
+                        let mut symbols_next = symbols.clone();
+                        if idx_n > *loc_e {
+                            let (left, right) = symbols_next.split_at_mut(idx_n);
+                            std::mem::swap(&mut left[*loc_e], &mut right[0]);
+                        }else{
+                            let (left, right) = symbols_next.split_at_mut(*loc_e);
+                            std::mem::swap(&mut left[idx_n], &mut right[0]);
+                        }
+                        if !states.contains(&symbols_next){
+                            states.insert(symbols_next.clone());
+                            queue_next.push((symbols_next, idx_n));
                         }
                     }
                 }
             }
         }
+        if queue_next.is_empty(){
+            return None;
+        }
+        queue = queue_next;
+        step+=1;
     }
-    None
 }
