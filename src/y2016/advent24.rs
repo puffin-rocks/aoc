@@ -18,7 +18,7 @@ impl Default for Advent {
 }
 
 impl Advent{
-    fn compute_distances(&self, mut elements: BTreeSet<Rc<char>> )->Result<HashMap<(char, char), usize>,String>{
+    fn compute_distances(&self, elements: BTreeSet<Rc<char>> )->Result<HashMap<(char, char), usize>,String>{
         let blocks = self.canvas.try_locate_element(&'#')?;
 
         let num_locations: HashSet<_> = self.canvas.elements()
