@@ -7,6 +7,7 @@ mod geometry;
 mod y2024;
 mod y2015;
 mod y2016;
+mod y2017;
 
 use std::time::{Duration, Instant};
 
@@ -110,6 +111,7 @@ fn main() {
     match year{
         2015 => y2015::collect_solutions(),
         2016 => y2016::collect_solutions(),
+        2017 => y2017::collect_solutions(),
         2024 => y2024::collect_solutions(),
         _ => unreachable!()
     };
