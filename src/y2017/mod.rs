@@ -1,6 +1,7 @@
 mod advent01;
 mod advent02;
 mod advent03;
+mod advent04;
 
 use std::collections::HashMap;
 use crate::utils::{Solve, add_default_to_collection};
@@ -11,7 +12,7 @@ pub(crate) fn collect_solutions() -> HashMap<u8, Box<dyn Solve>>{
     add_default_to_collection::<advent01::Advent>(&mut advents);
     add_default_to_collection::<advent02::Advent>(&mut advents);
     add_default_to_collection::<advent03::Advent>(&mut advents);
-    // add_default_to_collection::<advent04::Advent>(&mut advents);
+    add_default_to_collection::<advent04::Advent>(&mut advents);
     // add_default_to_collection::<advent05::Advent>(&mut advents);
     // add_default_to_collection::<advent06::Advent>(&mut advents);
     // add_default_to_collection::<advent07::Advent>(&mut advents);
