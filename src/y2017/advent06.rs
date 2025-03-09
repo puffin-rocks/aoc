@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use itertools::enumerate;
-use crate::hashset;
 use crate::utils::{assert_display, Label, Solve};
 
 pub(crate) struct Advent {
@@ -26,7 +25,7 @@ impl Advent {
         let mut n_steps = 0usize;
         states.insert(state(&self.memory), n_steps);
         let mut memory = self.memory.clone();
-        let mut cycle_length: Option<usize> = None;
+        let cycle_length: Option<usize>;
         loop{
             let mut m_max = *memory.iter().max().unwrap();
             let mut memory_next = memory.clone();
