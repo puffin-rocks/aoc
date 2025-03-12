@@ -170,6 +170,17 @@ pub fn vec2line<T: ToString>(output: Vec<T>)->String{
         .collect::<Vec<_>>()
         .join(",")
 }
+
+pub fn swap_vec_elements<T>(input: &mut Vec<T>, p1: usize, p2: usize){
+    if p2 > p1 {
+        let (left, right) = input.split_at_mut(p2);
+        std::mem::swap(&mut left[p1], &mut right[0]);
+    } else {
+        let (left, right) = input.split_at_mut(p1);
+        std::mem::swap(&mut left[p2], &mut right[0]);
+    }
+}
+
 #[allow(dead_code)]
 pub fn write_vec_to_file(vec: Vec<Vec<char>>, filename: &str) -> io::Result<()> {
     let mut file = File::create(filename)?;

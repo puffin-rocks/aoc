@@ -1,5 +1,5 @@
 use regex::Regex;
-use crate::utils::{assert_display, Label, Solve};
+use crate::utils::{assert_display, swap_vec_elements, Label, Solve};
 
 #[derive(Debug)]
 enum Operation{
@@ -26,13 +26,7 @@ impl Operation {
             }
             Operation::SwapValue(ch1, ch2) =>{
                 if let (Some(p1), Some(p2)) = (password.iter().position(|x| x == ch1), password.iter().position(|x| x == ch2)) {
-                    if p2 > p1 {
-                        let (left, right) = password.split_at_mut(p2);
-                        std::mem::swap(&mut left[p1], &mut right[0]);
-                    } else {
-                        let (left, right) = password.split_at_mut(p1);
-                        std::mem::swap(&mut left[p2], &mut right[0]);
-                    }
+                    swap_vec_elements::<char>(password, p1, p2);
                 }
             }
             Operation::RotateRight(is_right, n_steps) => {
