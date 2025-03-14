@@ -48,7 +48,7 @@ impl Solve for Advent {
                 furthest_distance = d;
             }
         }
-        assert_display(furthest_distance, None, 720, "Fewest number of steps", false)
+        assert_display(furthest_distance, None, 1485, "Furthest distance", false)
     }
 }
 
