@@ -159,7 +159,7 @@ impl Solve for Advent {
                 let mut registers: HashMap<char, usize> = HashMap::new();
                 registers.insert(A, a);
                 let val_r = execute_program(&mut registers, &self.program, false);
-                let val_e = vec2line(self.program[i..].to_vec());
+                let val_e = vec2line(self.program[i..].to_vec(),",");
 
                 if val_e != val_r {
                     a = steps.get(&(i + 1)).unwrap()+1;
@@ -278,6 +278,6 @@ fn execute_program(registers: &mut HashMap<char, usize>, program: &Vec<u8>, verb
         }
         i+=increment;
     }
-    vec2line(output)
+    vec2line(output,",")
 }
 

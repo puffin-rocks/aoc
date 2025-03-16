@@ -165,7 +165,7 @@ impl Solve for Advent {
             gate_map.insert((g2.input2, g2.input1, g2.operator), g2.clone());
         }
         to_swap.sort_unstable();
-        assert_display(vec2line(to_swap),None, String::from("gfv,hcm,kfs,tqm,vwr,z06,z11,z16"), "Wires to swap", test_mode)
+        assert_display(vec2line(to_swap, ","),None, String::from("gfv,hcm,kfs,tqm,vwr,z06,z11,z16"), "Wires to swap", test_mode)
     }
 }
 

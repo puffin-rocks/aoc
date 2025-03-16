@@ -165,7 +165,7 @@ impl Solve for Advent {
             }
         }
         if q.len() == 1{
-            let result = vec2line(q.iter().next().unwrap().iter().collect_vec());
+            let result = vec2line(q.iter().next().unwrap().iter().collect_vec(),",");
             assert_display(result,
                            Some(String::from("co,de,ka,ta")),
                            String::from("bg,bl,ch,fn,fv,gd,jn,kk,lk,pv,rr,tb,vw"),

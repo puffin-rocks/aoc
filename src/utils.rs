@@ -164,11 +164,11 @@ pub fn line2vec_i32(line: String) -> Result<Vec<i32>, std::num::ParseIntError> {
     Ok(v)
 }
 
-pub fn vec2line<T: ToString>(output: Vec<T>)->String{
+pub fn vec2line<T: ToString>(output: Vec<T>, sep: &str)->String{
     output.iter()
         .map(|num| num.to_string())
         .collect::<Vec<_>>()
-        .join(",")
+        .join(sep)
 }
 
 pub fn swap_vec_elements<T>(input: &mut Vec<T>, p1: usize, p2: usize){
